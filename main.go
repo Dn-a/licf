@@ -31,7 +31,6 @@ func readJson() {
 }
 
 func recursion(k string, i interface{}) {
-
 	switch v := i.(type) {
 	case []interface{}:
 		for _, vv := range v {
