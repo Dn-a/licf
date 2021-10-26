@@ -6,6 +6,7 @@ import (
 	"io/ioutil"
 	"log"
 	"os"
+	"strconv"
 	"strings"
 )
 
@@ -14,8 +15,8 @@ func main() {
 }
 
 func readJson() {
-	//jsonFile, err := os.Open("C:\\DVL\\configTable\\src\\main\\resources\\tables\\regions\\3_tableMapping.json")
-	jsonFile, err := os.Open("test.json")
+	jsonFile, err := os.Open("C:\\DVL\\configTable\\src\\main\\resources\\tables\\regions\\3_tableMapping.json")
+	//jsonFile, err := os.Open("test.json")
 
 	if err != nil {
 		log.Fatal(err)
@@ -26,7 +27,10 @@ func readJson() {
 	byteValue, _ := ioutil.ReadAll(jsonFile)
 
 	var result map[string]interface{}
+
 	json.Unmarshal([]byte(byteValue), &result)
+
+	fmt.Println()
 
 	recursion("", result)
 
@@ -35,39 +39,52 @@ func readJson() {
 func recursion(k string, i interface{}) {
 	switch v := i.(type) {
 	case []interface{}:
-		fmt.Println(ws.String(), "-", k, ":")
-		ws.Size++
-		for _, vv := range v {
-			recursion("", vv)
-			fmt.Println()
+		print(k, "[")
+		ws.Depth++
+		for kk, vv := range v {
+			recursion(strconv.Itoa(kk), vv)
 		}
-		ws.Size--
+		ws.Depth--
+		print("", "]")
 	case map[string]interface{}:
 		if k != "" {
-			fmt.Println(ws.String(), "-", k, ":")
-			ws.Size++
+			print(k, "{")
+			ws.Depth++
 		}
 		for kk, vv := range v {
 			recursion(kk, vv)
 		}
 		if k != "" {
-			ws.Size--
+			ws.Depth--
+			print("", "}")
 		}
 	default:
-		fmt.Println(ws.String(), "-", k, ":", v)
+		print(k, v)
 	}
 }
 
 var ws WhiteSpace
 
 type WhiteSpace struct {
-	Size int
+	Depth int
 }
 
-func (ws *WhiteSpace) String() string {
+func (ws *WhiteSpace) GetString() string {
 	var sb strings.Builder
-	for i := 0; i < ws.Size; i++ {
+	for i := 0; i < ws.Depth; i++ {
 		sb.WriteString("  ")
 	}
 	return sb.String()
+}
+
+func print(k string, v interface{}) {
+	if k == "" && v != nil {
+		fmt.Println(ws.GetString(), v)
+	} else if v == nil {
+		fmt.Println(ws.GetString(), k, ":")
+	} else {
+		fmt.Println(ws.GetString(),
+			//"-",
+			k, ":", v)
+	}
 }
