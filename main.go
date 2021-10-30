@@ -2,21 +2,59 @@ package main
 
 import (
 	"encoding/json"
+	"flag"
 	"fmt"
 	"io/ioutil"
 	"log"
 	"os"
+	"path/filepath"
 	"strconv"
 	"strings"
+
+	"github.com/fatih/color"
 )
 
+const logo = `
+_     _       __ 
+| |   (_) ___ / _|
+| |   | |/ __| |_ 
+| |___| | (__|  _|
+|_____|_|\___|_|  
+
+
+`
+
 func main() {
-	readJson()
+	color.Yellow(logo)
+
+	p := flag.String("p", "", "Specifies path of JSON file.")
+
+	flag.Parse()
+
+	files, err := ioutil.ReadDir(getCurrentDirectory())
+	if err != nil {
+		log.Fatal(err)
+	}
+
+	for _, file := range files {
+		if filepath.Ext(file.Name()) == ".json" {
+			fmt.Println(file.Name(), file.IsDir())
+		}
+	}
+
+	path := "test.json"
+
+	if *p != "" {
+		fmt.Println(p)
+		path = *p
+	}
+
+	readJson(path)
 }
 
-func readJson() {
-	jsonFile, err := os.Open("C:\\DVL\\configTable\\src\\main\\resources\\tables\\regions\\3_tableMapping.json")
-	//jsonFile, err := os.Open("test.json")
+func readJson(path string) {
+	//jsonFile, err := os.Open("C:\\DVL\\configTable\\src\\main\\resources\\tables\\regions\\3_tableMapping.json")
+	jsonFile, err := os.Open(path)
 
 	if err != nil {
 		log.Fatal(err)
@@ -86,4 +124,12 @@ func print(k string, v interface{}) {
 			//"-",
 			k, ":", v)
 	}
+}
+
+func getCurrentDirectory() string {
+	dir, err := filepath.Abs(filepath.Dir(os.Args[0]))
+	if err != nil {
+		log.Fatal(err)
+	}
+	return dir
 }
