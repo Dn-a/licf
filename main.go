@@ -33,7 +33,6 @@ func readJson() {
 	fmt.Println()
 
 	recursion("", result)
-
 }
 
 func recursion(k string, i interface{}) {
