@@ -12,6 +12,7 @@ import (
 	"strings"
 
 	"github.com/fatih/color"
+	"gopkg.in/yaml.v2"
 )
 
 const logo = `
@@ -25,9 +26,10 @@ _     _       __
 `
 
 func main() {
-	color.Yellow(logo)
 
-	p := flag.String("p", "", "Specifies path of JSON file.")
+	initConfig()
+
+	path := flag.String("path", "", "Specifies path of JSON file.")
 
 	flag.Parse()
 
@@ -42,31 +44,20 @@ func main() {
 		}
 	}
 
-	path := "test.json"
+	p := "test.json"
 
-	if *p != "" {
-		fmt.Println(p)
-		path = *p
+	if *path != "" {
+		p = *path
 	}
 
-	readJson(path)
+	readJson(p)
 }
 
 func readJson(path string) {
-	//jsonFile, err := os.Open("C:\\DVL\\configTable\\src\\main\\resources\\tables\\regions\\3_tableMapping.json")
-	jsonFile, err := os.Open(path)
-
-	if err != nil {
-		log.Fatal(err)
-	}
-
-	defer jsonFile.Close()
-
-	byteValue, _ := ioutil.ReadAll(jsonFile)
 
 	var result map[string]interface{}
 
-	json.Unmarshal([]byte(byteValue), &result)
+	unmarshalFile(path, &result, tJSON)
 
 	fmt.Println()
 
@@ -100,6 +91,7 @@ func recursion(k string, i interface{}) {
 	}
 }
 
+// SPACE
 var ws WhiteSpace
 
 type WhiteSpace struct {
@@ -126,10 +118,57 @@ func print(k string, v interface{}) {
 	}
 }
 
+// DIRECTORY
 func getCurrentDirectory() string {
 	dir, err := filepath.Abs(filepath.Dir(os.Args[0]))
 	if err != nil {
 		log.Fatal(err)
 	}
 	return dir
+}
+
+// Main Configuration
+type configFile struct {
+	Logo confifLogo
+}
+
+type confifLogo struct {
+	Show bool `yaml:"show"`
+}
+
+type fileType string
+
+const (
+	tYAML fileType = "yaml"
+	tJSON fileType = "json"
+)
+
+func initConfig() {
+	var config configFile
+	unmarshalFile("applications.yaml", &config, tYAML)
+
+	if config.Logo.Show {
+		color.Yellow(logo)
+	}
+}
+
+// Unmarshal a file on strctured object
+func unmarshalFile(path string, interf interface{}, tp fileType) {
+	file, err := ioutil.ReadFile(path)
+
+	if err != nil {
+		log.Fatal(err)
+	}
+
+	if tp == tYAML {
+		err = yaml.Unmarshal(file, interf)
+	} else if tp == tJSON {
+		err = json.Unmarshal(file, interf)
+	} else {
+		log.Fatalf("[Unmarshal]: type '%v' not allowed", tp)
+	}
+
+	if err != nil {
+		log.Fatalf("[Unmarshal]: %v", err)
+	}
 }
