@@ -1,2 +1,9 @@
+app:
+  name: "licf"
+
 logo:
   show: false
+
+file:
+  recursion: true
+  ignore: ['.git', 'applications.yaml']
