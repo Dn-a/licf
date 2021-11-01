@@ -1,7 +1,6 @@
 package main
 
 import (
-	"encoding/json"
 	"flag"
 	"fmt"
 	"io/ioutil"
@@ -12,10 +11,10 @@ import (
 	"strings"
 
 	"github.com/fatih/color"
-	"gopkg.in/yaml.v2"
 )
 
-const logo = `
+const (
+	LOGO = `
 _     _       __ 
 | |   (_) ___ / _|
 | |   | |/ __| |_ 
@@ -24,84 +23,64 @@ _     _       __
 
 
 `
+	FILE_CONFIG = "config.yaml"
+)
 
 func main() {
 
-	initConfig()
+	if GetConfig().Logo.Show {
+		color.Yellow(LOGO)
+	}
 
 	path := flag.String("path", "", "Specifies path of JSON file.")
+	pattern := flag.String("pattern", "", "Search pattern")
 
 	flag.Parse()
 
-	getFiles(getCurrentDirectory())
+	iterateFiles(*path, *pattern)
 
-	if *path != "" {
-		readJson(*path)
+}
+
+// Iterate list files
+func iterateFiles(directory, pattern string) {
+
+	if directory == "" {
+		directory = getCurrentDirectory()
 	}
-}
 
-func readJson(path string) {
+	files, err := ioutil.ReadDir(directory)
 
-	var result map[string]interface{}
-
-	unmarshalFile(path, &result, tJSON)
-
-	fmt.Println()
-
-	recursion("", result)
-}
-
-func recursion(k string, i interface{}) {
-	switch v := i.(type) {
-	case []interface{}:
-		print(k, "[")
-		ws.Depth++
-		for kk, vv := range v {
-			recursion(strconv.Itoa(kk), vv)
-		}
-		ws.Depth--
-		print("", "]")
-	case map[string]interface{}:
-		if k != "" {
-			print(k, "{")
-			ws.Depth++
-		}
-		for kk, vv := range v {
-			recursion(kk, vv)
-		}
-		if k != "" {
-			ws.Depth--
-			print("", "}")
-		}
-	default:
-		print(k, v)
+	if err != nil {
+		log.Fatal(err)
 	}
-}
 
-// White Space
-var ws WhiteSpace
+	for _, file := range files {
 
-type WhiteSpace struct {
-	Depth int
-}
+		// Ignore direcotry or Files defined in config.yaml
+		if GetConfig().File.CheckIgnore(file.Name()) {
+			continue
+		}
 
-func (ws *WhiteSpace) GetString() string {
-	var sb strings.Builder
-	for i := 0; i < ws.Depth; i++ {
-		sb.WriteString("  ")
-	}
-	return sb.String()
-}
+		ext := strings.Replace(filepath.Ext(file.Name()), ".", "", -1)
 
-func print(k string, v interface{}) {
-	if k == "" && v != nil {
-		fmt.Println(ws.GetString(), v)
-	} else if v == nil {
-		fmt.Println(ws.GetString(), k, ":")
-	} else {
-		fmt.Println(ws.GetString(),
-			//"-",
-			k, ":", v)
+		filePath := directory + string(os.PathSeparator) + file.Name()
+
+		if GetConfig().File.CheckFormat(ext) && (ext == "json" || ext == "yaml" || ext == "yml") {
+			line := Reader{filePath}.Search(pattern)
+			yellow := color.New(color.FgYellow).SprintFunc()
+
+			fmt.Print(yellow(filePath + ":" + strconv.Itoa(line) + " : "))
+
+			if line > -1 {
+				color.Green("True")
+			} else {
+				color.Red("False")
+			}
+
+		} else if file.IsDir() && GetConfig().File.Recursion {
+			iterateFiles(filePath, pattern)
+		}
+
 	}
 }
 
@@ -112,103 +91,4 @@ func getCurrentDirectory() string {
 		log.Fatal(err)
 	}
 	return dir
-}
-
-// Main Configuration
-type appConfig struct {
-	App  appApp  `yaml:"app"`
-	Logo appLogo `yaml:"logo"`
-	File appFile `yaml:"file"`
-}
-
-type appApp struct {
-	Name string `yaml:"name"`
-}
-
-type appLogo struct {
-	Show bool `yaml:"show"`
-}
-
-type appFile struct {
-	Recursion bool     `yaml:"recursion"`
-	Ignore    []string `yaml:"ignore"`
-}
-
-func (f *appFile) contains(str string) bool {
-	for _, v := range f.Ignore {
-		if v == str {
-			return true
-		}
-	}
-	return false
-}
-
-var config *appConfig
-
-func initConfig() {
-
-	unmarshalFile("applications.yaml", &config, tYAML)
-
-	if config.Logo.Show {
-		color.Yellow(logo)
-	}
-}
-
-// FILE
-
-type fileType string
-
-const (
-	tYAML fileType = "yaml"
-	tJSON fileType = "json"
-)
-
-// Unmarshal a file on strctured object
-func unmarshalFile(path string, interf interface{}, tp fileType) {
-	file, err := ioutil.ReadFile(path)
-
-	if err != nil {
-		return
-		//log.Fatal(err)
-	}
-
-	if tp == tYAML {
-		err = yaml.Unmarshal(file, interf)
-	} else if tp == tJSON {
-		err = json.Unmarshal(file, interf)
-	} else {
-		log.Fatalf("[Unmarshal]: type '%v' not allowed", tp)
-	}
-
-	if err != nil {
-		log.Fatalf("[Unmarshal]: %v", err)
-	}
-}
-
-// Iterate list files
-func getFiles(directory string) {
-
-	files, err := ioutil.ReadDir(directory)
-
-	if err != nil {
-		log.Fatal(err)
-	}
-
-	for _, file := range files {
-
-		if config.File.contains(file.Name()) {
-			continue
-		}
-
-		ext := filepath.Ext(file.Name())
-
-		if ext == ".json" || ext == ".yaml" || ext == ".yml" {
-			fmt.Println(directory + "\\" + file.Name())
-		}
-
-		if file.IsDir() && config.File.Recursion {
-			//fmt.Printf("directory: %v \n", file.Name())
-			getFiles(file.Name())
-		}
-	}
 }

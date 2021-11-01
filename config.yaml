@@ -1,0 +1,11 @@
+app:
+  name: "licf"
+
+logo:
+  show: false
+
+file:
+  supported-format: ["json"]
+  recursion: true
+  print: false
+  ignore: ['.git', 'config.yaml']
