@@ -37,19 +37,14 @@ func main() {
 
 	flag.Parse()
 
-	files := Files{*path, *pattern, 0}
-	files.iterateFiles()
+	iterateFiles(*path, *pattern)
 
-}
-
-type Files struct {
-	path      string
-	pattern   string
-	totalFile int
 }
 
 // Iterate all files from directory
-func (f *Files) iterateFiles() {
+func iterateFiles(directory, pattern string) {
+
+	var totalFile int
 
 	var recFunc func(dir string)
 
@@ -66,7 +61,7 @@ func (f *Files) iterateFiles() {
 		if err != nil {
 			f, err2 := os.Stat(dir)
 			files = append(files, f)
-			if !f.Mode().IsRegular() || err2 != nil {
+			if err2 != nil || !f.Mode().IsRegular() {
 				log.Fatal(err)
 				log.Fatal(err2)
 			}
@@ -89,7 +84,7 @@ func (f *Files) iterateFiles() {
 
 			if GetConfig().File.CheckFormat(ext) && GetConfig().File.CheckOnly(file.Name()) {
 
-				f.totalFile++
+				totalFile++
 
 				// Execute with different threads
 				ch := make(chan byte, 1)
@@ -105,7 +100,7 @@ func (f *Files) iterateFiles() {
 						color.Red("False")
 					}
 					ch <- 1
-				}(filePath, f.pattern)
+				}(filePath, pattern)
 
 				<-ch
 
@@ -115,9 +110,9 @@ func (f *Files) iterateFiles() {
 		}
 	}
 
-	recFunc(f.path)
+	recFunc(directory)
 
-	color.Yellow("\nTotal file: %v", f.totalFile)
+	color.Yellow("\nTotal file: %v", totalFile)
 }
 
 // DIRECTORY

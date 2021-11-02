@@ -8,5 +8,5 @@ file:
   recursion: true
   print: false
   supported-format: ["json"]
-  ignore: ['.git', 'config.yaml']
+  ignore: ['.git', 'config.yaml','.idea','.settings','.classpath','target','config']
   only: ['1_headers.json']
