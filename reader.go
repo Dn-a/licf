@@ -36,8 +36,6 @@ func recursion(k string, i interface{}, r *Recursions) {
 		return
 	}
 
-	r.LineFound++
-
 	switch v := i.(type) {
 	case []interface{}:
 		print(k, "[", *r)
@@ -61,7 +59,8 @@ func recursion(k string, i interface{}, r *Recursions) {
 		}
 	default:
 		print(k, v, *r)
-		if r.Pattern.contain(k) && r.Pattern.contain(v.(string)) {
+		r.LineFound++
+		if r.Pattern.hasKey(k) && r.Pattern.hasValue(v) {
 			r.Stop = true
 		}
 	}
@@ -96,7 +95,7 @@ func (r *Recursions) getSpace() string {
 	return sb.String()
 }
 
-func (sp *SearchPattern) contain(test string) bool {
+func (sp *SearchPattern) contain(test interface{}) bool {
 	values := strings.Split(sp.pattern, ":")
 	for _, val := range values {
 		if val == test {
@@ -106,10 +105,35 @@ func (sp *SearchPattern) contain(test string) bool {
 	return false
 }
 
+func (sp *SearchPattern) hasKey(test interface{}) bool {
+	if !strings.Contains(sp.pattern, ":") {
+		return false
+	}
+
+	if strings.Split(sp.pattern, ":")[0] == test {
+		return true
+	}
+
+	return false
+}
+
+func (sp *SearchPattern) hasValue(test interface{}) bool {
+	if !strings.Contains(sp.pattern, ":") {
+		return false
+	}
+
+	if strings.Split(sp.pattern, ":")[1] == test {
+		return true
+	}
+
+	return false
+}
+
 func print(k string, v interface{}, r Recursions) {
 	if !GetConfig().File.Print {
 		return
 	}
+
 	if k == "" && v != nil {
 		fmt.Println(r.getSpace(), v)
 	} else if v == nil {

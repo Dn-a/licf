@@ -5,7 +5,8 @@ logo:
   show: false
 
 file:
-  supported-format: ["json"]
   recursion: true
   print: false
+  supported-format: ["json"]
   ignore: ['.git', 'config.yaml']
+  only: ['1_headers.json']

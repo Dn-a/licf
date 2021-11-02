@@ -10,10 +10,11 @@ type appLogo struct {
 }
 
 type appFile struct {
-	Print           bool     `yaml:"print"`
 	Recursion       bool     `yaml:"recursion"`
-	Ignore          []string `yaml:"ignore"`
+	Print           bool     `yaml:"print"`
 	SupportedFormat []string `yaml:"supported-format"`
+	Ignore          []string `yaml:"ignore"`
+	Only            []string `yaml:"only"`
 }
 
 type appConfig struct {
@@ -33,6 +34,18 @@ func (f *appFile) CheckIgnore(str string) bool {
 
 func (f *appFile) CheckFormat(str string) bool {
 	for _, v := range f.SupportedFormat {
+		if v == str {
+			return true
+		}
+	}
+	return false
+}
+
+func (f *appFile) CheckOnly(str string) bool {
+	if len(f.Only) == 0 {
+		return true
+	}
+	for _, v := range f.Only {
 		if v == str {
 			return true
 		}

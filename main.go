@@ -37,51 +37,87 @@ func main() {
 
 	flag.Parse()
 
-	iterateFiles(*path, *pattern)
+	files := Files{*path, *pattern, 0}
+	files.iterateFiles()
 
 }
 
-// Iterate list files
-func iterateFiles(directory, pattern string) {
+type Files struct {
+	path      string
+	pattern   string
+	totalFile int
+}
 
-	if directory == "" {
-		directory = getCurrentDirectory()
-	}
+// Iterate all files from directory
+func (f *Files) iterateFiles() {
 
-	files, err := ioutil.ReadDir(directory)
+	var recFunc func(dir string)
 
-	if err != nil {
-		log.Fatal(err)
-	}
+	recFunc = func(dir string) {
 
-	for _, file := range files {
-
-		// Ignore direcotry or Files defined in config.yaml
-		if GetConfig().File.CheckIgnore(file.Name()) {
-			continue
+		if dir == "" {
+			dir = getCurrentDirectory()
 		}
 
-		ext := strings.Replace(filepath.Ext(file.Name()), ".", "", -1)
+		files, err := ioutil.ReadDir(dir)
 
-		filePath := directory + string(os.PathSeparator) + file.Name()
+		// if it is not a directory, checks if it is a file and append it to the files array
+		// otherwise it returns an error
+		if err != nil {
+			f, err2 := os.Stat(dir)
+			files = append(files, f)
+			if !f.Mode().IsRegular() || err2 != nil {
+				log.Fatal(err)
+				log.Fatal(err2)
+			}
+		}
 
-		if GetConfig().File.CheckFormat(ext) && (ext == "json" || ext == "yaml" || ext == "yml") {
-			line := Reader{filePath}.Search(pattern)
-			yellow := color.New(color.FgYellow).SprintFunc()
+		for _, file := range files {
 
-			fmt.Print(yellow(filePath + ":" + strconv.Itoa(line) + " : "))
-
-			if line > -1 {
-				color.Green("True")
-			} else {
-				color.Red("False")
+			// Ignore direcotry or Files defined in config.yaml
+			if GetConfig().File.CheckIgnore(file.Name()) {
+				continue
 			}
 
-		} else if file.IsDir() && GetConfig().File.Recursion {
-			iterateFiles(filePath, pattern)
-		}
+			ext := strings.Replace(filepath.Ext(file.Name()), ".", "", -1)
 
+			filePath := dir
+
+			if !strings.Contains(dir, file.Name()) {
+				filePath += string(os.PathSeparator) + file.Name()
+			}
+
+			if GetConfig().File.CheckFormat(ext) && GetConfig().File.CheckOnly(file.Name()) {
+
+				f.totalFile++
+
+				// Execute with different threads
+				ch := make(chan byte, 1)
+				go func(f, p string) {
+					line := Reader{f}.Search(p)
+					yellow := color.New(color.FgYellow).SprintFunc()
+
+					fmt.Print(yellow(f + ":" + strconv.Itoa(line) + " : "))
+
+					if line > -1 {
+						color.Green("True")
+					} else {
+						color.Red("False")
+					}
+					ch <- 1
+				}(filePath, f.pattern)
+
+				<-ch
+
+			} else if file.IsDir() && GetConfig().File.Recursion {
+				recFunc(filePath)
+			}
+		}
 	}
+
+	recFunc(f.path)
+
+	color.Yellow("\nTotal file: %v", f.totalFile)
 }
 
 // DIRECTORY
