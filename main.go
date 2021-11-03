@@ -54,14 +54,21 @@ func iterateFiles(directory, pattern string) {
 			dir = getCurrentDirectory()
 		}
 
+		// Ignore direcotry or Files defined in config.yaml
+		if lstF := strings.Split(dir, string(os.PathSeparator)); len(lstF) > 0 && GetConfig().File.CheckIgnore(lstF[len(lstF)-1]) {
+			return
+		}
+
 		files, err := ioutil.ReadDir(dir)
 
-		// if it is not a directory, checks if it is a file and append it to the files array
+		// if it is not a directory, checks if it is a file and append it to the files array,
 		// otherwise it returns an error
+		var isFile os.FileInfo
+		var err2 error
 		if err != nil {
-			f, err2 := os.Stat(dir)
-			files = append(files, f)
-			if err2 != nil || !f.Mode().IsRegular() {
+			isFile, err2 = os.Stat(dir)
+			files = append(files, isFile)
+			if err2 != nil || !isFile.Mode().IsRegular() {
 				log.Fatal(err)
 				log.Fatal(err2)
 			}
@@ -76,12 +83,13 @@ func iterateFiles(directory, pattern string) {
 
 			ext := strings.Replace(filepath.Ext(file.Name()), ".", "", -1)
 
-			filePath := dir
+			fullPath := dir
 
-			if !strings.Contains(dir, file.Name()) {
-				filePath += string(os.PathSeparator) + file.Name()
+			if isFile == nil || isFile.IsDir() {
+				fullPath += string(os.PathSeparator) + file.Name()
 			}
 
+			// Check Format and allowed files, which are defined in config.yaml
 			if GetConfig().File.CheckFormat(ext) && GetConfig().File.CheckOnly(file.Name()) {
 
 				totalFile++
@@ -100,12 +108,12 @@ func iterateFiles(directory, pattern string) {
 						color.Red("False")
 					}
 					ch <- 1
-				}(filePath, pattern)
+				}(fullPath, pattern)
 
 				<-ch
 
 			} else if file.IsDir() && GetConfig().File.Recursion {
-				recFunc(filePath)
+				recFunc(fullPath)
 			}
 		}
 	}
@@ -115,7 +123,7 @@ func iterateFiles(directory, pattern string) {
 	color.Yellow("\nTotal file: %v", totalFile)
 }
 
-// DIRECTORY
+// Current Directory
 func getCurrentDirectory() string {
 	dir, err := filepath.Abs(filepath.Dir(os.Args[0]))
 	if err != nil {

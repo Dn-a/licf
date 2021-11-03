@@ -21,7 +21,7 @@ func (r Reader) Search(pattern string) int {
 
 	var recursions = Recursions{0, 0, false, SearchPattern{pattern}}
 
-	recursion("", *result, &recursions)
+	recursion("", result, &recursions)
 
 	if recursions.Stop {
 		return recursions.LineFound
@@ -30,18 +30,18 @@ func (r Reader) Search(pattern string) int {
 	}
 }
 
-func recursion(k string, i interface{}, r *Recursions) {
+func recursion(k string, i *interface{}, r *Recursions) {
 
 	if r.Stop {
 		return
 	}
 
-	switch v := i.(type) {
+	switch v := (*i).(type) {
 	case []interface{}:
 		print(k, "[", *r)
 		r.Depth++
 		for kk, vv := range v {
-			recursion(strconv.Itoa(kk), vv, r)
+			recursion(strconv.Itoa(kk), &vv, r)
 		}
 		r.Depth--
 		print("", "]", *r)
@@ -51,7 +51,7 @@ func recursion(k string, i interface{}, r *Recursions) {
 			r.Depth++
 		}
 		for kk, vv := range v {
-			recursion(kk, vv, r)
+			recursion(kk, &vv, r)
 		}
 		if k != "" {
 			r.Depth--
@@ -67,9 +67,9 @@ func recursion(k string, i interface{}, r *Recursions) {
 }
 
 // Read YAML/JSON file
-func readFile(path string) *map[string]interface{} {
+func readFile(path string) *interface{} {
 
-	var result map[string]interface{}
+	var result interface{}
 
 	unmarshalFile(path, &result)
 
@@ -165,7 +165,7 @@ func unmarshalFile(path string, interf interface{}) error {
 	}
 
 	if err != nil {
-		log.Fatalf("[Unmarshal]: %v", err)
+		log.Fatalf("[Unmarshal]: file %v; %v", path, err)
 	}
 
 	return err
