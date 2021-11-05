@@ -9,4 +9,4 @@ file:
   print: false
   supported-format: ["json"]
   ignore: ['.git', 'config.yaml','.idea','.settings','.classpath','target','config']
-  only: ['1_headers.json']
+  only: ['headers.json']

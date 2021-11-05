@@ -95,14 +95,8 @@ func (r *Recursions) getSpace() string {
 	return sb.String()
 }
 
-func (sp *SearchPattern) contain(test interface{}) bool {
-	values := strings.Split(sp.pattern, ":")
-	for _, val := range values {
-		if val == test {
-			return true
-		}
-	}
-	return false
+func contain(s string, test interface{}) bool {
+	return s == fmt.Sprintf("%v", test)
 }
 
 func (sp *SearchPattern) hasKey(test interface{}) bool {
@@ -110,11 +104,9 @@ func (sp *SearchPattern) hasKey(test interface{}) bool {
 		return false
 	}
 
-	if strings.Split(sp.pattern, ":")[0] == test {
-		return true
-	}
+	s := strings.TrimSpace(strings.Split(sp.pattern, ":")[0])
 
-	return false
+	return contain(s, test)
 }
 
 func (sp *SearchPattern) hasValue(test interface{}) bool {
@@ -122,11 +114,9 @@ func (sp *SearchPattern) hasValue(test interface{}) bool {
 		return false
 	}
 
-	if strings.Split(sp.pattern, ":")[1] == test {
-		return true
-	}
+	s := strings.TrimSpace(strings.Split(sp.pattern, ":")[1])
 
-	return false
+	return contain(s, test)
 }
 
 func print(k string, v interface{}, r Recursions) {
