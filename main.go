@@ -37,7 +37,9 @@ func main() {
 
 	flag.Parse()
 
-	iterateFiles(*path, *pattern)
+	//iterateFiles(*path, *pattern)
+
+	folderIterator(*path, *pattern)
 
 }
 
@@ -75,6 +77,8 @@ func iterateFiles(directory, pattern string) {
 		}
 
 		for _, file := range files {
+
+			//time.Sleep(time.Microsecond)
 
 			// Ignore direcotry or Files defined in config.yaml
 			if GetConfig().File.CheckIgnore(file.Name()) {
@@ -130,4 +134,77 @@ func getCurrentDirectory() string {
 		log.Fatal(err)
 	}
 	return dir
+}
+
+func getFile(dir, pattern string, file *os.FileInfo) {
+
+	name := (*file).Name()
+
+	// Ignore direcotry or Files defined in config.yaml
+	if GetConfig().File.CheckIgnore(name) {
+		return
+	}
+
+	ext := strings.Replace(filepath.Ext(name), ".", "", -1)
+
+	fullPath := dir + string(os.PathSeparator) + name
+
+	// Check Format and allowed files, which are defined in config.yaml
+	if GetConfig().File.CheckFormat(ext) && GetConfig().File.CheckOnly(name) {
+
+		// Execute with different threads
+		ch := make(chan byte, 1)
+		go func(f, p string) {
+			line := Reader{f}.Search(p)
+			yellow := color.New(color.FgYellow).SprintFunc()
+
+			fmt.Print(yellow(f + ":" + strconv.Itoa(line) + " : "))
+
+			if line > -1 {
+				color.Green("True")
+			} else {
+				color.Red("False")
+			}
+			ch <- 1
+		}(fullPath, pattern)
+
+		<-ch
+
+	}
+}
+
+func folderIterator(dir, pattern string) {
+
+	if dir == "" {
+		dir = getCurrentDirectory()
+	}
+
+	files, err := ioutil.ReadDir(dir)
+
+	if err != nil {
+		isFile, err2 := os.Stat(dir)
+		if isFile.Mode().IsRegular() {
+			getFile(dir, pattern, &isFile)
+			return
+		} else {
+			log.Fatal(err, " ", err2)
+		}
+	}
+
+	for _, file := range files {
+
+		// Ignore direcotry or Files defined in config.yaml
+		if file.IsDir() {
+
+			if GetConfig().File.CheckIgnore(file.Name()) {
+				continue
+			} else if GetConfig().File.Recursion {
+				fullPath := dir + string(os.PathSeparator) + file.Name()
+				folderIterator(fullPath, pattern)
+			}
+
+		} else {
+			getFile(dir, pattern, &file)
+		}
+	}
 }
