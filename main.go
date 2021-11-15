@@ -11,6 +11,9 @@ import (
 	"strings"
 
 	"github.com/fatih/color"
+
+	"github.com/Dn-a/licf/pkg/config/config.go"
+	"github.com/Dn-a/licf/pkg/reader/reader.go"
 )
 
 const (

@@ -1,4 +1,4 @@
-package main
+package config
 
 // Initialize Configuration
 type appApp struct {
