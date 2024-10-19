@@ -11,8 +11,6 @@ import (
 	"strings"
 
 	"github.com/fatih/color"
-
-	"config"
 )
 
 const (
